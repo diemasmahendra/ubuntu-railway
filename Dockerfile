@@ -1,18 +1,19 @@
 FROM ubuntu:22.04
 
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y wget curl git python3 python3-pip neofetch && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl wget git python3 python3-pip ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN wget -qO /bin/ttyd https://github.com/tsl0922/ttyd/releases/download/1.7.3/ttyd.x86_64 && \
-    chmod +x /bin/ttyd
+# Node.js dan npm tersedia setiap kali container dibuat ulang
+COPY --from=node:22-bookworm-slim /usr/local/ /usr/local/
 
-RUN echo "neofetch" >> /root/.bashrc && \
-    echo "cd /root" >> /root/.bashrc
+RUN wget -qO /bin/ttyd \
+      https://github.com/tsl0922/ttyd/releases/download/1.7.3/ttyd.x86_64 \
+    && chmod +x /bin/ttyd \
+    && npm install -g @wonderwhy-er/desktop-commander@latest
 
-EXPOSE $PORT
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
 
-CMD ["/bin/bash", "-c", "\
-    echo \"export PS1='\\[\\033[01;32m\\]$USERNAME@\\h\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]\\$ '\" >> /root/.bashrc && \
-    /bin/ttyd -p $PORT -c $USERNAME:$PASSWORD /bin/bash"]
+EXPOSE 8080
+CMD ["/usr/local/bin/start.sh"]
